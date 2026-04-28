@@ -1,0 +1,141 @@
+openapi: 3.1.0
+info:
+  title: 6A Demo · Notes API
+  version: 0.1.0
+  description: |
+    个人笔记 App 的 API 契约。
+    由 notes-backend 实现,被 notes-mobile 消费。
+    契约变更由架构经理 Agent 统一把关(见 CODEOWNERS)。
+
+servers:
+  - url: https://{projectRef}.supabase.co/rest/v1
+    description: Supabase Cloud REST API
+    variables:
+      projectRef:
+        default: TBD
+  - url: http://localhost:54321/rest/v1
+    description: Local Supabase
+
+security:
+  - bearerAuth: []
+  - apiKey: []
+
+paths:
+  /notes:
+    get:
+      summary: 列出当前用户的笔记
+      operationId: listNotes
+      tags: [notes]
+      parameters:
+        - name: order
+          in: query
+          schema: { type: string, default: 'updated_at.desc' }
+        - name: limit
+          in: query
+          schema: { type: integer, default: 50, maximum: 1000 }
+      responses:
+        '200':
+          description: 笔记列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: '#/components/schemas/Note' }
+
+    post:
+      summary: 新建笔记
+      operationId: createNote
+      tags: [notes]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NoteCreateInput' }
+      responses:
+        '201':
+          description: 已创建
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Note' }
+
+  /notes/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: string, format: uuid }
+    get:
+      summary: 获取单条笔记
+      operationId: getNote
+      tags: [notes]
+      responses:
+        '200':
+          description: 笔记详情
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Note' }
+        '404':
+          description: 不存在或无权访问
+
+    patch:
+      summary: 更新笔记
+      operationId: updateNote
+      tags: [notes]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/NoteUpdateInput' }
+      responses:
+        '200':
+          description: 已更新
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Note' }
+
+    delete:
+      summary: 删除笔记(软删除,UPDATE deleted_at)
+      operationId: deleteNote
+      tags: [notes]
+      responses:
+        '204':
+          description: 已删除
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+    apiKey:
+      type: apiKey
+      in: header
+      name: apikey
+
+  schemas:
+    Note:
+      type: object
+      required: [id, user_id, title, content, created_at, updated_at]
+      properties:
+        id: { type: string, format: uuid }
+        user_id: { type: string, format: uuid }
+        title: { type: string, minLength: 1, maxLength: 200 }
+        content: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        deleted_at:
+          type: [string, 'null']
+          format: date-time
+
+    NoteCreateInput:
+      type: object
+      required: [title]
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        content: { type: string }
+
+    NoteUpdateInput:
+      type: object
+      properties:
+        title: { type: string, minLength: 1, maxLength: 200 }
+        content: { type: string }

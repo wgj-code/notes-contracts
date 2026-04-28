@@ -1,0 +1,6 @@
+# 6A Demo · notes-contracts CODEOWNERS
+# API 契约共享库,由架构经理 Agent 把关
+# 任何变更都必须经架构经理 review(虚拟项目阶段由栩然代理)
+
+*                   @wgj-code
+openapi/**          @wgj-code
